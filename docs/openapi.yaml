@@ -1,1 +1,221 @@
-# Здесь будет OpenAPI описание всех доступных эндпоинтов и моделей данных.
+openapi: 3.0.0
+info:
+  title: Bank REST API
+  version: 1.0.0
+  description: |
+    API для управления банковскими картами.
+    
+    ## Аутентификация
+    Все запросы (кроме `/api/auth/login`) требуют JWT токен в заголовке Authorization:
+    ```
+    Authorization: Bearer <your_jwt_token>
+    ```
+    
+    ## Роли
+    - **ADMIN**: Полный доступ ко всем операциям
+    - **USER**: Доступ только к своим картам и переводам
+
+servers:
+  - url: http://localhost:8080
+    description: Локальный сервер разработки
+
+paths:
+  /api/auth/login:
+    post:
+      summary: Аутентификация пользователя
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Успешная аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JwtResponse'
+
+  /api/cards:
+    get:
+      summary: Получить список карт
+      tags:
+        - Cards
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Список карт
+    post:
+      summary: Создать новую карту
+      tags:
+        - Cards
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardCreateRequest'
+      responses:
+        '201':
+          description: Карта создана
+
+  /api/cards/{id}:
+    get:
+      summary: Получить карту по ID
+      tags:
+        - Cards
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Информация о карте
+
+  /api/cards/{id}/block:
+    put:
+      summary: Заблокировать карту
+      tags:
+        - Cards
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Карта заблокирована
+
+  /api/transfers:
+    post:
+      summary: Перевод между своими картами
+      tags:
+        - Transfers
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+      responses:
+        '200':
+          description: Перевод выполнен успешно
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+
+    JwtResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        type:
+          type: string
+          default: Bearer
+        username:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+
+    CardCreateRequest:
+      type: object
+      required:
+        - cardNumber
+        - cardHolderName
+        - expirationDate
+      properties:
+        cardNumber:
+          type: string
+          pattern: '^[0-9]{16}$'
+        cardHolderName:
+          type: string
+        expirationDate:
+          type: string
+          format: date
+        ownerId:
+          type: integer
+
+    CardDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+        cardNumber:
+          type: string
+          description: Маскированный номер карты (**** **** **** 1234)
+        cardHolderName:
+          type: string
+        expirationDate:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [ACTIVE, BLOCKED, EXPIRED]
+        balance:
+          type: number
+          format: decimal
+
+    TransferRequest:
+      type: object
+      required:
+        - fromCardId
+        - toCardId
+        - amount
+      properties:
+        fromCardId:
+          type: integer
+        toCardId:
+          type: integer
+        amount:
+          type: number
+          format: decimal
+          minimum: 0
