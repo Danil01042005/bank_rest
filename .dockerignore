@@ -1,0 +1,11 @@
+.git
+.gitignore
+.target
+/target
+node_modules
+.idea
+.vscode
+*.iml
+*.log
+initdb/*.sh
+

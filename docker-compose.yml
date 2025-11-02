@@ -12,11 +12,30 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/initdb:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bankuser"]
+      test: ["CMD-SHELL", "pg_isready -U bankuser -d ${POSTGRES_DB:-bankdb}"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bank_app
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-bankdb}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-bankuser}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-bankpass}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret}
+      CARD_ENC_SECRET: ${CARD_ENC_SECRET:-MySecretKeyForEncryptionOfCardNumbers256}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
 
 volumes:
   postgres_data:

@@ -30,11 +30,7 @@ server:
 jwt:
   secret: ${JWT_SECRET:MySecretKeyForJWTTokenGenerationThatShouldBeAtLeast256BitsLong}
   accessExpiration: 900000   # 15 минут
-  refreshExpiration: 1209600000 # 14 дней
-
-card:
-  enc:
-    secret: ${CARD_ENC_SECRET:MySecretKeyForEncryptionOfCardNumbers256}
+  refreshExpiration: 1209600000 # 14 дне
 
 springdoc:
   api-docs:
@@ -43,6 +39,7 @@ springdoc:
     path: /swagger-ui.html
     enabled: true
 
+# Logging
 logging:
   level:
     com.example.bankcards: DEBUG
