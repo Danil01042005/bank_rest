@@ -1,105 +1,144 @@
-<h1>🚀 Разработка Системы Управления Банковскими Картами</h1>
+# Bank REST API
 
-<h2>📁 Стартовая структура</h2>
-  <p>
-    Проектная структура с директориями и описательными файлами (<code>README Controller.md</code>, <code>README Service.md</code> и т.д.) уже подготовлена.<br />
-    Все реализации нужно добавлять <strong>в соответствующие директории</strong>.
-  </p>
-  <p>
-    После завершения разработки <strong>временные README-файлы нужно удалить</strong>, чтобы они не попадали в итоговую сборку.
-  </p>
-  
-<h2>📝 Описание задачи</h2>
-  <p>Разработать backend-приложение на Java (Spring Boot) для управления банковскими картами:</p>
-  <ul>
-    <li>Создание и управление картами</li>
-    <li>Просмотр карт</li>
-    <li>Переводы между своими картами</li>
-  </ul>
+Backend на Spring Boot для управления банковскими картами (Java 17, Spring Security + JWT, Spring Data JPA, Liquibase, OpenAPI).
 
-<h2>💳 Атрибуты карты</h2>
-  <ul>
-    <li>Номер карты (зашифрован, отображается маской: <code>**** **** **** 1234</code>)</li>
-    <li>Владелец</li>
-    <li>Срок действия</li>
-    <li>Статус: Активна, Заблокирована, Истек срок</li>
-    <li>Баланс</li>
-  </ul>
+## Запуск
+1) База данных (PostgreSQL):
+```bash
+docker-compose up -d
+```
+2) Переменные окружения (dev пример):
+- Windows PowerShell
+```powershell
+$env:JWT_SECRET="super-long-random-32bytes-secret"
+$env:CARD_ENC_SECRET="super-long-32-bytes-key"
+```
+3) Приложение (без установленного Maven):
+```powershell
+$env:JWT_SECRET="super-long-random-32bytes-secret"
+$env:CARD_ENC_SECRET="super-long-32-bytes-key"
+.\mvnw.cmd spring-boot:run
+```
+Если Maven установлен:
+```powershell
+$env:JWT_SECRET="super-long-random-32bytes-secret"
+$env:CARD_ENC_SECRET="super-long-32-bytes-key"
+mvn spring-boot:run
+```
+4) Документация:
+- Swagger UI: http://localhost:8080/swagger-ui.html
+- OpenAPI: docs/openapi.yaml
 
-<h2>🧾 Требования</h2>
+## Конфигурация (application.yml)
+- spring.datasource — параметры подключения к PostgreSQL
+- spring.jpa.hibernate.ddl-auto: validate — схему ведёт Liquibase
+- jwt.secret / accessExpiration / refreshExpiration — настройки JWT
+- Hikari (datasource.hikari) — ожидание готовности БД на старте
 
-<h3>✅ Аутентификация и авторизация</h3>
-  <ul>
-    <li>Spring Security + JWT</li>
-    <li>Роли: <code>ADMIN</code> и <code>USER</code></li>
-  </ul>
+## Роли и аутентификация
+- Предустановленные пользователи:
+  - ADMIN: admin / admin123
+  - USER: user / user123
+- Вход:
+```http
+POST /api/auth/login
+Content-Type: application/json
 
-<h3>✅ Возможности</h3>
-<strong>Администратор:</strong>
-  <ul>
-    <li>Создаёт, блокирует, активирует, удаляет карты</li>
-    <li>Управляет пользователями</li>
-    <li>Видит все карты</li>
-  </ul>
+{ "username": "admin", "password": "admin123" }
+```
+Ответ: `{ token, refreshToken, type, username, roles }`
+- Обновление access токена:
+```http
+POST /api/auth/refresh
+Content-Type: application/json
 
-<strong>Пользователь:</strong>
-  <ul>
-    <li>Просматривает свои карты (поиск + пагинация)</li>
-    <li>Запрашивает блокировку карты</li>
-    <li>Делает переводы между своими картами</li>
-    <li>Смотрит баланс</li>
-  </ul>
+{ "refreshToken": "<refresh>" }
+```
+- Авторизация: `Authorization: Bearer <token>`
 
-<h3>✅ API</h3>
-  <ul>
-    <li>CRUD для карт</li>
-    <li>Переводы между своими картами</li>
-    <li>Фильтрация и постраничная выдача</li>
-    <li>Валидация и сообщения об ошибках</li>
-  </ul>
+## Эндпойнты и примеры
 
-<h3>✅ Безопасность</h3>
-  <ul>
-    <li>Шифрование данных</li>
-    <li>Ролевой доступ</li>
-    <li>Маскирование номеров карт</li>
-  </ul>
+### Карты (пользователь)
+- Создать карту (номер шифруется, отображается маской):
+```http
+POST /api/cards
+Content-Type: application/json
+Authorization: Bearer <token>
 
-<h3>✅ Работа с БД</h3>
-  <ul>
-    <li>PostgreSQL или MySQL</li>
-    <li>Миграции через Liquibase (<code>src/main/resources/db/migration</code>)</li>
-  </ul>
+{
+  "cardNumber": "1234567890123456",
+  "cardHolderName": "Test User",
+  "expirationDate": "2027-12-31"
+}
+```
+- Список своих карт с пагинацией и поиском:
+```http
+GET /api/cards?page=0&size=10&sortBy=id&search=visa
+Authorization: Bearer <token>
+```
+- Получить свою карту по id:
+```http
+GET /api/cards/1
+Authorization: Bearer <token>
+```
+- Запросить блокировку своей карты:
+```http
+PUT /api/cards/1/block
+Authorization: Bearer <token>
+```
 
-<h3>✅ Документация</h3>
-  <ul>
-    <li>Swagger UI / OpenAPI — <code>docs/openapi.yaml</code></li>
-    <li><code>README.md</code> с инструкцией запуска</li>
-  </ul>
+### Карты (администратор)
+- Активировать карту:
+```http
+PUT /api/cards/1/activate
+Authorization: Bearer <admin-token>
+```
+- Удалить карту:
+```http
+DELETE /api/cards/1
+Authorization: Bearer <admin-token>
+```
+- Просмотреть все карты (пагинация + поиск):
+```http
+GET /api/admin/cards?page=0&size=20&sortBy=id&search=user
+Authorization: Bearer <admin-token>
+```
 
-<h3>✅ Развёртывание и тестирование</h3>
-  <ul>
-    <li>Docker Compose для dev-среды</li>
-    <li>Liquibase миграции</li>
-    <li>Юнит-тесты ключевой бизнес-логики</li>
-  </ul>
+### Переводы (пользователь)
+- Перевод между своими картами:
+```http
+POST /api/transfers
+Content-Type: application/json
+Authorization: Bearer <token>
 
-<h2>📊 Оценка</h2>
-  <ul>
-    <li>Соответствие требованиям</li>
-    <li>Чистота архитектуры и кода</li>
-    <li>Безопасность</li>
-    <li>Обработка ошибок</li>
-    <li>Покрытие тестами</li>
-    <li>ООП и уровни абстракции</li>
-  </ul>
+{ "fromCardId": 1, "toCardId": 2, "amount": 100.00 }
+```
 
-<h2>💡 Технологии</h2>
-  <p>
-    Java 17+, Spring Boot, Spring Security, Spring Data JPA, PostgreSQL/MySQL, Liquibase, Docker, JWT, Swagger (OpenAPI)
-  </p>
+### Пользователи (администратор)
+```http
+POST   /api/users              # создать пользователя
+GET    /api/users              # список
+GET    /api/users/{id}         # получить по id
+DELETE /api/users/{id}         # удалить
+```
 
-<h2> 📤 Формат сдачи</h2>
-<p>
-Весь код и изменения принимаются только через git-репозиторий с открытым доступом к проекту. Отправка файлов в любом виде не принимается.
-  </p>
+## Поиск и пагинация
+- Параметры: `page` (по умолчанию 0), `size` (10), `sortBy` (id)
+- Параметр `search` (без учёта регистра):
+  - для пользователя: по `cardHolderName` и `id` (в пределах своих карт)
+  - для администратора: по `cardHolderName`, `owner.username`, `id`
+
+## Безопасность
+- JWT access/refresh, ролевой доступ через `@PreAuthorize`
+- Номера карт хранятся зашифрованными (AES), в ответах — маскирование `**** **** **** 1234`
+- Никогда не коммитьте секреты в репозиторий; задавайте `JWT_SECRET` через переменные окружения/секрет‑хранилище
+
+## База данных и миграции
+- Liquibase применяет миграции при старте (`src/main/resources/db/migration`)
+- Таблицы: `users`, `user_roles` (через @ElementCollection), `cards`
+- Индексы: на ключевые поля и связи (owner/status)
+
+## Примечания
+- В dev логирование SQL включено через логгер; форматирование — `hibernate.format_sql=true`
+- Hikari настроен ждать БД на старте, чтобы избежать гонки поднятия контейнеров
+- Все новые эндпойнты отражены в `docs/openapi.yaml`; Swagger UI доступен по /swagger-ui.html
