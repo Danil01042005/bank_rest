@@ -24,3 +24,4 @@ public class CardCreateRequest {
 	private Long ownerId;
 }
 
+
