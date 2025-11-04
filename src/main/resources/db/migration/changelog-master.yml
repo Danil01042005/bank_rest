@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
-      file: db/migration/changes/001-create-tables.yml
+      file: db/migration/changes/001-init.yml
+
+
+
 
 
