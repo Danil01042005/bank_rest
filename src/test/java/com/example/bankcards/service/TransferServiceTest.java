@@ -1,6 +1,5 @@
 package com.example.bankcards.service;
 
-import com.example.bankcards.dto.TransferRequest;
 import com.example.bankcards.entity.Card;
 import com.example.bankcards.entity.User;
 import com.example.bankcards.exception.BadRequestException;
@@ -42,14 +41,12 @@ class TransferServiceTest {
 	@Test void ok() {
 		when(cardRepository.findByIdAndOwner(1L, user)).thenReturn(Optional.of(from));
 		when(cardRepository.findByIdAndOwner(2L, user)).thenReturn(Optional.of(to));
-		TransferRequest r = new TransferRequest(); r.setFromCardId(1L); r.setToCardId(2L); r.setAmount(new BigDecimal("10.00"));
-		assertDoesNotThrow(() -> transferService.betweenOwn(r));
+		assertDoesNotThrow(() -> transferService.betweenOwn(1L, 2L, new BigDecimal("10.00")));
 		verify(cardRepository, times(2)).save(any(Card.class));
 	}
 	@Test void insufficient() {
 		when(cardRepository.findByIdAndOwner(1L, user)).thenReturn(Optional.of(from));
 		when(cardRepository.findByIdAndOwner(2L, user)).thenReturn(Optional.of(to));
-		TransferRequest r = new TransferRequest(); r.setFromCardId(1L); r.setToCardId(2L); r.setAmount(new BigDecimal("1000.00"));
-		assertThrows(BadRequestException.class, () -> transferService.betweenOwn(r));
+		assertThrows(BadRequestException.class, () -> transferService.betweenOwn(1L, 2L, new BigDecimal("1000.00")));
 	}
 }

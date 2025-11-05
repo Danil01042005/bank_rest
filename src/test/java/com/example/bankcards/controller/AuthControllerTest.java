@@ -3,6 +3,7 @@ package com.example.bankcards.controller;
 import com.example.bankcards.dto.JwtResponse;
 import com.example.bankcards.dto.LoginRequest;
 import com.example.bankcards.dto.RefreshTokenRequest;
+import com.example.bankcards.security.JwtAuthenticationFilter;
 import com.example.bankcards.security.JwtTokenUtil;
 import com.example.bankcards.security.UserDetailsServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,6 +46,9 @@ class AuthControllerTest {
 
 	@MockBean
 	private UserDetailsServiceImpl userDetailsService;
+
+	@MockBean
+	private JwtAuthenticationFilter jwtAuthenticationFilter;
 
 	@Test
 	void login_validCredentials_shouldReturnTokens() throws Exception {

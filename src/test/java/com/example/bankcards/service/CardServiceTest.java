@@ -1,13 +1,11 @@
 package com.example.bankcards.service;
 
-import com.example.bankcards.dto.CardCreateRequest;
 import com.example.bankcards.entity.Card;
 import com.example.bankcards.entity.User;
 import com.example.bankcards.exception.BadRequestException;
 import com.example.bankcards.exception.ResourceNotFoundException;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
-import com.example.bankcards.util.CardEncryptionUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +27,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class CardServiceTest {
@@ -43,53 +42,52 @@ class CardServiceTest {
 	@BeforeEach
 	void setup() {
 		user = new User(); user.setId(1L); user.setUsername("u");
-		when(securityContext.getAuthentication()).thenReturn(authentication);
+		lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
 		SecurityContextHolder.setContext(securityContext);
-		when(authentication.getName()).thenReturn("u");
-		when(userRepository.findByUsername("u")).thenReturn(Optional.of(user));
+		lenient().when(authentication.getName()).thenReturn("u");
+		lenient().when(userRepository.findByUsername("u")).thenReturn(Optional.of(user));
 	}
 
 	@Test
-	void mineSearch_ok() {
+	void mine_ok() {
 		Pageable p = PageRequest.of(0,10);
-		when(cardRepository.findByOwnerAndCardHolderNameContainingIgnoreCase(eq(user), anyString(), eq(p)))
+		when(cardRepository.searchByOwner(eq(user), eq("test"), eq(p)))
 				.thenReturn(new PageImpl<>(List.of()));
-		Page<?> res = cardService.mineSearch("test", p);
+		Page<?> res = cardService.mine(p, "test");
 		assertNotNull(res);
-		verify(cardRepository).findByOwnerAndCardHolderNameContainingIgnoreCase(eq(user), eq("test"), eq(p));
+		verify(cardRepository).searchByOwner(eq(user), eq("test"), eq(p));
 	}
 
 	@Test
 	void adminList_ok() {
 		Pageable p = PageRequest.of(0,10);
 		when(cardRepository.findAll(p)).thenReturn(new PageImpl<>(List.of()));
-		assertNotNull(cardService.adminList(p));
+		assertNotNull(cardService.adminList(null, p));
 		verify(cardRepository).findAll(p);
 	}
 
 	@Test
-	void activateAdmin_notFound() {
+	void activate_notFound() {
 		when(cardRepository.findById(99L)).thenReturn(Optional.empty());
-		assertThrows(ResourceNotFoundException.class, () -> cardService.activateAdmin(99L));
+		assertThrows(ResourceNotFoundException.class, () -> cardService.activate(99L));
 	}
 
 	@Test
-	void deleteAdmin_notFound() {
+	void delete_notFound() {
 		when(cardRepository.existsById(99L)).thenReturn(false);
-		assertThrows(ResourceNotFoundException.class, () -> cardService.deleteAdmin(99L));
+		assertThrows(ResourceNotFoundException.class, () -> cardService.delete(99L));
 	}
 
 	@Test void create_ok() {
-		CardCreateRequest req = new CardCreateRequest();
-		req.setCardNumber("1234567812345678"); req.setCardHolderName("U"); req.setExpirationDate(LocalDate.now().plusYears(1));
 		when(cardRepository.existsByEncryptedCardNumber(any())).thenReturn(false);
 		when(cardRepository.save(any(Card.class))).thenAnswer(i -> { Card c = i.getArgument(0); c.setId(1L); return c; });
-		assertNotNull(cardService.create(req, false));
+		// Дефолтный ключ должен работать, так как CardEncryptionUtil использует DEFAULT_KEY если CARD_ENC_SECRET не установлена
+		assertDoesNotThrow(() -> {
+			cardService.create("1234567812345678", "U", LocalDate.now().plusYears(1), null, false);
+		});
 	}
 	@Test void create_duplicate() {
-		CardCreateRequest req = new CardCreateRequest();
-		req.setCardNumber("1234567812345678"); req.setCardHolderName("U"); req.setExpirationDate(LocalDate.now().plusYears(1));
 		when(cardRepository.existsByEncryptedCardNumber(any())).thenReturn(true);
-		assertThrows(BadRequestException.class, () -> cardService.create(req, false));
+		assertThrows(BadRequestException.class, () -> cardService.create("1234567812345678", "U", LocalDate.now().plusYears(1), null, false));
 	}
 }

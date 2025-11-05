@@ -1,6 +1,8 @@
 package com.example.bankcards.controller;
 
 import com.example.bankcards.dto.CardDTO;
+import com.example.bankcards.security.JwtAuthenticationFilter;
+import com.example.bankcards.security.JwtTokenUtil;
 import com.example.bankcards.service.CardService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -10,6 +12,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -31,6 +34,15 @@ class AdminCardControllerTest {
 
 	@MockBean
 	private CardService cardService;
+
+	@MockBean
+	private UserDetailsService userDetailsService;
+
+	@MockBean
+	private JwtTokenUtil jwtTokenUtil;
+
+	@MockBean
+	private JwtAuthenticationFilter jwtAuthenticationFilter;
 
 	@Test
 	@WithMockUser(roles = "ADMIN")

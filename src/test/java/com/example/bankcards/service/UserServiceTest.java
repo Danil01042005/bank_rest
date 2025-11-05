@@ -24,6 +24,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -53,8 +54,9 @@ class UserServiceTest {
 		user.setFullName("Test User");
 		user.setRoles(Set.of(UserRole.USER));
 
-		when(securityContext.getAuthentication()).thenReturn(authentication);
+		lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
 		SecurityContextHolder.setContext(securityContext);
+		lenient().when(authentication.getName()).thenReturn("testuser");
 	}
 
 	@Test

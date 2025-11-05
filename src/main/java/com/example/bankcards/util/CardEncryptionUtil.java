@@ -12,7 +12,7 @@ import java.util.Base64;
 public class CardEncryptionUtil {
 	private static final Logger log = LoggerFactory.getLogger(CardEncryptionUtil.class);
 	private static final String ALGORITHM = "AES";
-	private static final String DEFAULT_KEY = "MySecretKeyForEncryptionOfCardNumbers256";
+	private static final String DEFAULT_KEY = "MySecretKeyForEncryptionCard256Bytes"; // 32 символа для AES-256
 
 	private static String getSecret() {
 		String fromEnv = System.getenv("CARD_ENC_SECRET");
@@ -25,7 +25,13 @@ public class CardEncryptionUtil {
 	}
 
 	private static SecretKeySpec key() {
-		return new SecretKeySpec(getSecret().getBytes(StandardCharsets.UTF_8), ALGORITHM);
+		String secret = getSecret();
+		byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+		// AES требует ключ длиной 16, 24 или 32 байта
+		// Если ключ длиннее, обрезаем до 32 байт; если короче, дополняем
+		byte[] aesKey = new byte[32];
+		System.arraycopy(keyBytes, 0, aesKey, 0, Math.min(keyBytes.length, 32));
+		return new SecretKeySpec(aesKey, ALGORITHM);
 	}
 
 	public static String encrypt(String cardNumber) {
